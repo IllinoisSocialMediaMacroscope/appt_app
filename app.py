@@ -29,6 +29,33 @@ def login():
 def logout():
      return
 
+@app.route('/', methods=['GET'])
+def homepage():
+     locations = ["Carle", "UIUC", "Peoria"]
+     times = [
+          "08:00 AM",
+          "08:30 AM",
+          "09:00 AM",
+          "09:30 AM",
+          "10:00 AM",
+          "10:30 AM",
+          "11:00 AM",
+          "11:30 AM",
+          "12:00 PM",
+          "12:30 PM",
+          "01:00 PM",
+          "01:30 PM",
+          "02:00 PM",
+          "02:30 PM",
+          "03:00 PM",
+          "03:30 PM",
+          "04:00 PM",
+          "04:30 PM",
+          "05:00 PM",
+          "05:30 PM",
+          "06:00 PM",
+     ]
+     return render_template('appointments.html', locations=locations, times=times)
 
 @app.route('/list', methods=['GET'])
 def list_available_appointments():
@@ -67,11 +94,13 @@ def list_available_appointments():
           "location": row['location']} for row in results
      ]
 
-     return render_template('appointments.html', available_slots=available_slots)
+     return {"available_slots": available_slots}
+
 
 @app.route('/submit', methods=['POST'])
 def submit_appointment():
      return
+
 
 @app.route('/cancel', methods=['POST'])
 def cancel_appointment():

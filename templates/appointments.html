@@ -9,13 +9,10 @@
 
     <!-- bootstrap -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
-    integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"/>
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
-    integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous"/>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
-    integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"/>
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous"/>
 
-    <script src="{{url_for('static', filename='appointments.js')}}"></script>
     <link rel="stylesheet" href="{{url_for('static', filename='appointments.css')}}"/>
     <title>Available Appointments</title>
 </head>
@@ -24,64 +21,40 @@
 <div class="filters form-inline">
     <select class="form-control" name="locations" id="location-select">
         <option value="">Location</option>
-        <option value="Carle">Carle</option>
-        <option value="UIUC">UIUC</option>
-        <option value="Peoria">Peoria</option>
+        {% for location in locations %}
+        <option value="{{location}}">{{location}}</option>
+        {% endfor %}
     </select>
     <!--    TODO default to today, and minimum selection should be today-->
     <input class="form-control" type="date" name="dates" id="date-select" value="today" min="2020-07-01"
            max="2021-01-01">
     <select class="form-control" name="timeslots" id="timeslot-select">
-        <option value="">Time Slot</option>
-        <option value="08:00 AM">08:00 AM</option>
-        <option value="08:30 AM">08:30 AM</option>
-        <option value="09:00 AM">09:00 AM</option>
-        <option value="09:30 AM">09:30 AM</option>
-        <option value="10:00 AM">10:00 AM</option>
-        <option value="10:30 AM">10:30 AM</option>
-        <option value="11:00 AM">11:00 AM</option>
-        <option value="11:30 AM">11:30 AM</option>
-        <option value="12:00 PM">12:00 AM</option>
-        <option value="12:30 PM">12:30 AM</option>
-        <option value="01:00 PM">01:00 AM</option>
-        <option value="01:30 PM">01:30 AM</option>
-        <option value="02:00 PM">02:00 AM</option>
-        <option value="02:30 PM">02:30 AM</option>
-        <option value="03:00 PM">03:00 AM</option>
-        <option value="03:30 PM">03:30 AM</option>
-        <option value="04:00 PM">04:00 AM</option>
-        <option value="04:30 PM">04:30 AM</option>
-        <option value="05:00 PM">05:00 AM</option>
-        <option value="05:30 PM">05:30 AM</option>
-        <option value="06:00 PM">06:00 AM</option>
+        <option value="">Time Slots</option>
+        {% for time in times %}
+        <option value="{{time}}">{{time}}</option>
+        {% endfor %}
     </select>
 </div>
 
 <div class="tables">
-    <table class="table table-sm">
+    <table class="table table-sm" id="available-appointments">
         <thead>
-            <TR>
-                <TD>Select</TD>
-                <TD>Location</TD>
-                <TD>Date</TD>
-                <TD>Time</TD>
-            </TR>
+        <tr>
+            <td>Select</td>
+            <td>Location</td>
+            <td>Date</td>
+            <td>Time</td>
+        </tr>
         </thead>
         <tbody>
-            {% for item in available_slots %}
-            <TR>
-                <TD><input type="checkbox" id="{{item.id}}" name="submit" value="{{item.id}}"></TD>
-                <TD><SPAN>{{item.location}}</SPAN></TD>
-                <TD>{{item.date}}</TD>
-                <TD><SPAN>{{item.time}}</SPAN></TD>
-            </TR>
-            {% endfor %}
         </tbody>
     </table>
+
+    <button type="submit" value="submit">Submit</button>
+    <button type="submit" value="cancel">Cancel</button>
 </div>
 
-<button type="submit" value="Submit">Submit</button>
-<button type="submit" value="Cancel">Cancel</button>
+<script src="{{url_for('static', filename='appointments.js')}}"></script>
 
 </body>
 </html>
