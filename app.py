@@ -57,6 +57,7 @@ def homepage():
      ]
      return render_template('appointments.html', locations=locations, times=times)
 
+
 @app.route('/list', methods=['GET'])
 def list_available_appointments():
      query = '''SELECT a.id, a.date, a.time, l.name AS location
@@ -99,64 +100,97 @@ def list_available_appointments():
 
 @app.route('/submit', methods=['POST'])
 def submit_appointment():
-     return
+     # TODO: here need to get the current user name;
+     # TODO: hard code jane smith single user
+     person = "Jane Smith"
+     if request.get_json() and request.get_json()['appt_id']:
+          appt = request.get_json()['appt_id']
+     else:
+          # TODO populate the error message to frontend
+          raise ValueError("Apppointment Id is a required field!")
+
+     conn = get_db()
+     cur = conn.cursor()
+
+     # get the current user id
+     cur.execute("SELECT id FROM USERS WHERE fname = (?)", (person.split(' ')[0],))
+     # TODO error handling what if that user doesn't exist
+     user_id = cur.fetchone()
+
+     # get the appt id
+     cur.execute("SELECT id FROM APPOINTMENTS WHERE id = (?)", (appt,))
+     # TODO error handling what if that appointment id doesn't exist
+     appt_id = cur.fetchone()
+
+     # INSERT IF MAX 25 NOT REACHED PER APPOINTMENT ID
+     cur.execute('''
+     	SELECT COUNT(appointment) as count_appt
+     	FROM USER_APPOINTMENTS
+     	WHERE appointment = (?)''', (appt_id['id'],))
+
+     count_appt = cur.fetchone()
+
+     cur.execute('''
+     	SELECT user
+     	FROM USER_APPOINTMENTS
+     	WHERE user = (?)''', (user_id['id'],))
+
+     check_user = cur.fetchone()
+
+     if ((check_user is None) and (count_appt['count_appt']) < 25):
+          cur.execute("INSERT INTO USER_APPOINTMENTS (user, appointment) VALUES (?,?)", (user_id['id'], appt_id['id']))
+          conn.commit()
+     else:
+          # TODO populate the error message to frontend
+          cur.close()
+          raise ValueError('Action not allowed. User already claimed a slot or slot is full.')
+
+     cur.close()
+
+     return {}
 
 
 @app.route('/cancel', methods=['POST'])
 def cancel_appointment():
-     return
 
+     # TODO: here need to get the current user name;
+     # TODO: hard code jane smith single user
+     person = "Jane Smith"
 
-#3. RUN THESE INDIVIDUALLY, THEN COMMENT OUT
+     conn = get_db()
+     cur = conn.cursor()
 
-#claim appt; receive these values from session; here, hard-coded for demo
-# id_person = "Jane Smith"
-# id_appt = 2
-# 
-# id_person = "John Smith"
-# id_appt = 2
-# 
-#FAILS BECAUSE APPT HAS BEEN CLAIMED TWICE
-# id_person = "Jill Smith"
-# id_appt = 2
-# 
-# id_person = "Jill Smith"
-# id_appt = 3
-# 
-#FAILS BECAUSE JOHN SMITH IS ALREADY IN USER_APPOINTMENTS
-# id_person = "John Smith"
-# id_appt = 3
-# 
-# cur.execute("SELECT id FROM USERS WHERE fname = (?)", (id_person.split(' ')[0],) )
-# user_id = cur.fetchone()
-# 
-# cur.execute("SELECT id FROM APPOINTMENTS WHERE id = (?)", (id_appt,) )
-# appt_id = cur.fetchone()
-# 
-# # 
-# # #4. INSERT IF MAX 2 NOT REACHED PER APPOINTMENT ID; expecting message because 3 is in there twice
-# # 
-# cur.execute('''
-# 	SELECT COUNT(appointment) as count_appt
-# 	FROM USER_APPOINTMENTS
-# 	WHERE appointment = (?)''', (appt_id['id'],) )
-# 	
-# count_appt = cur.fetchone()
-# 
-# cur.execute('''
-# 	SELECT user
-# 	FROM USER_APPOINTMENTS
-# 	WHERE user = (?)''', (user_id['id'],) )
-# 
-# check_user = cur.fetchone()
-# 
-# if( (check_user is None)  and  (count_appt['count_appt']) < 2 ):	
-# 	cur.execute("INSERT INTO USER_APPOINTMENTS (user, appointment) VALUES (?,?)", (user_id['id'], appt_id['id']) )
-# 	conn.commit() 
-# else: 
-# 	print('Action not allowed. User already claimed a slot or slot is full.')
-# 
-# 
+     cur.execute("SELECT * FROM USER_APPOINTMENTS")
+     results = cur.fetchall()
+     for row in results:
+          print(row['user'], row['appointment'])
+
+     # # get the current user id
+     # cur.execute("SELECT id FROM USERS WHERE fname = (?)", (person.split(' ')[0],))
+     # # TODO error handling what if that user doesn't exist
+     # user_id = cur.fetchone()
+     #
+     # # get the appointment id;
+     # cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
+     # appt_id_claimed = cur.fetchone()
+     #
+     # # delete that record in the database
+     # # cur.execute("DELETE FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
+     # # conn.commit()
+     #
+     # # show unclaimed appt in the appointments table
+     # cur.execute("SELECT * FROM APPOINTMENTS WHERE id = (?)", (appt_id_claimed['id'],))
+     # results = cur.fetchall()
+     #
+     # unclaimed_slot = {
+     #      "id": results[0]['id'],
+     #      "date": results[0]['date'],
+     #      "time": results[0]['time'],
+     #      "location": results[0]['location']}
+     #
+     # return {"unclaimed_slot": unclaimed_slot}
+
+# TODO: this could be admin feature; see the current registered user and their timeslots
 # #5. SHOW USERS_APPOINTMENTS TABLE DATA
 # 
 # cur.execute('''SELECT u.fname ||' '|| u.lname as Name, u.phone, l.name as Location, a.date, a.time
@@ -174,26 +208,4 @@ def cancel_appointment():
 #      writer.writerow(['name', 'phone', 'location', 'date', 'time'])
 #      writer.writerows(claimed)
 # 
-# 
-
-
-# 7. GIVE UP CLAIMED APPTS
-
-# id_person = 2
-# id_claimed = 2
-# 
-# cur.execute("DELETE FROM USER_APPOINTMENTS WHERE user = (?)", (id_person,))
-# 
-# conn.commit() 
-# 
-# #show unclaimed appt in the appointments table
-# cur.execute("SELECT * FROM APPOINTMENTS WHERE id = (?)", (id_claimed,))
-# 
-# results = cur.fetchall()
-# 
-# for row in results:
-# 	print(row['id'], row['Date'], row['Time'], row['Location'])
-
-
-
-
+#
