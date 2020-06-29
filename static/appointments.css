@@ -1,0 +1,8 @@
+body{
+    margin:50px;
+    text-align: center;
+}
+
+.filters{
+    display:inline-block;
+}
