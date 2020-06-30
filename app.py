@@ -116,12 +116,11 @@ def list_my_appointment():
      cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
      appt_id_claimed = cur.fetchone()
 
-     # show claimed appt in the appointments table
-     cur.execute("SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
-                 "a.location = l.id WHERE a.id = (?)", (appt_id_claimed['appointment'],))
-     results = cur.fetchall()
-
-     if results:
+     if appt_id_claimed:
+          # show claimed appt in the appointments table
+          cur.execute("SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
+                      "a.location = l.id WHERE a.id = (?)", (appt_id_claimed['appointment'],))
+          results = cur.fetchall()
           claimed_slot = {
                "id": results[0]['id'],
                "date": results[0]['date'],
@@ -213,6 +212,7 @@ def cancel_appointment():
 
      # get the appointment id;
      cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
+     # TODO what if that user has no claimed appointment
      appt_id_claimed = cur.fetchone()
 
      # delete that record in the database

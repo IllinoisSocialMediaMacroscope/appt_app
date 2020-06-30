@@ -1,6 +1,4 @@
 $(document).ready(function(){
-    $("#available-appointments").find('tbody').empty();
-    $("#my-appointment").find('tbody').empty();
     $.ajax({
         url: "my-appointment",
         type: "GET",
@@ -10,7 +8,7 @@ $(document).ready(function(){
             }
         },
         error: function (jqXHR, exception) {
-            console.log(jqXHR.responseText);
+            alert(jqXHR.responseText);
         }
     });
 
@@ -23,23 +21,20 @@ $(document).ready(function(){
             }
         },
         error: function (jqXHR, exception) {
-            console.log(jqXHR.responseText);
+            alert(jqXHR.responseText);
         }
     });
 });
 
 $("#location-select").on("change", function () {
-    $("#available-appointments").find('tbody').empty();
     filterOnChange();
 });
 
 $("#date-select").on("change", function () {
-    $("#available-appointments").find('tbody').empty();
     filterOnChange();
 });
 
 $("#timeslot-select").on("change", function () {
-    $("#available-appointments").find('tbody').empty();
     filterOnChange();
 });
 
@@ -47,21 +42,41 @@ $("#submit-appointment").on("click", function() {
     // check if ONE appointment has been selected
     var selectedElement = $("#available-appointments").find('tbody').find("input:checked");
     if (selectedElement.length === 1){
-        var appt_id = selectedElement[0].val();
+        var appt_id = $(selectedElement[0]).val();
         $.ajax({
             url: "submit",
             type: "POST",
-            data:{
+            contentType: 'application/json',
+            data:JSON.stringify({
                 "appt_id":appt_id
-            },
+            }),
             success: function (data) {
+                alert("your appointment:" + JSON.stringify(data) + "has successfully been booked!")
+                displayMyAppointment(data.claimed_slot);
             },
             error: function (jqXHR, exception) {
-                console.log(jqXHR.responseText);
+                alert(jqXHR.responseText);
             }
         });
     }
+    else{
+        alert("You have to select ONE available appointment!");
+    }
 
+});
+
+$("#cancel-appointment").on("click", function() {
+    $.ajax({
+        url: "cancel",
+        type: "DELETE",
+        success: function (data) {
+            alert("your appointment:" + JSON.stringify(data) + "has successfully been canceled!")
+            displayMyAppointment({});
+        },
+        error: function (jqXHR, exception) {
+            alert(jqXHR.responseText);
+        }
+    });
 });
 
 function filterOnChange() {
@@ -87,12 +102,13 @@ function filterOnChange() {
             }
         },
         error: function (jqXHR, exception) {
-            console.log(jqXHR.responseText);
+            alert(jqXHR.responseText);
         }
     });
 }
 
 function updateAppointmentTable(available_slots) {
+    $("#available-appointments").find('tbody').empty();
     $.each(available_slots, function (i, item) {
         $("#available-appointments").find('tbody').append(
             "<tr>" +
@@ -106,11 +122,14 @@ function updateAppointmentTable(available_slots) {
     })
 }
 
-function displayMyAppointment(claimed_slots) {
-    $("#my-appointment").find('tbody').append(
+function displayMyAppointment(claimed_slot) {
+    $("#my-appointment").find('tbody').empty();
+    if (!$.isEmptyObject(claimed_slot)){
+        $("#my-appointment").find('tbody').append(
         "<tr>" +
-            "<td>" + claimed_slots.location + "</td>" +
-            "<td>" + claimed_slots.date + "</td>" +
-            "<td>" + claimed_slots.time + "</td>" +
+            "<td>" + claimed_slot.location + "</td>" +
+            "<td>" + claimed_slot.date + "</td>" +
+            "<td>" + claimed_slot.time + "</td>" +
         "</tr>");
+    }
 }
