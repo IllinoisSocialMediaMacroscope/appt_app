@@ -18,6 +18,9 @@
 </head>
 <body>
 <h1>Available Appointments</h1>
+<div class="my-appointment">
+
+</div>
 <div class="filters form-inline">
     <select class="form-control" name="locations" id="location-select">
         <option value="">Location</option>
@@ -34,6 +37,8 @@
         <option value="{{time}}">{{time}}</option>
         {% endfor %}
     </select>
+    <button class="btn btn-primary" type="submit" id="submit-appointment" value="submit">Submit</button>
+    <button class="btn btn-danger" type="submit" id="cancel-appointment" value="cancel">Cancel</button>
 </div>
 
 <div class="tables">
@@ -49,9 +54,6 @@
         <tbody>
         </tbody>
     </table>
-
-    <button type="submit" value="submit">Submit</button>
-    <button type="submit" value="cancel">Cancel</button>
 </div>
 
 <script src="{{url_for('static', filename='appointments.js')}}"></script>

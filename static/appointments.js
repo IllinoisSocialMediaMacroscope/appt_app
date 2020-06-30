@@ -29,6 +29,27 @@ $("#timeslot-select").on("change", function () {
     filterOnChange();
 });
 
+$("#submit-appointment").on("click", function() {
+    // check if ONE appointment has been selected
+    var selectedElement = $("#available-appointments").find('tbody').find("input:checked");
+    if (selectedElement.length === 1){
+        var appt_id = selectedElement[0].val();
+        $.ajax({
+            url: "submit",
+            type: "POST",
+            data:{
+                "appt_id":appt_id
+            },
+            success: function (data) {
+            },
+            error: function (jqXHR, exception) {
+                console.log(jqXHR.responseText);
+            }
+        });
+    }
+
+});
+
 function filterOnChange() {
     var location = $("#location-select option:selected").val();
     if ($("#date-select").val() !== "" && $("#date-select").val() !== undefined) {

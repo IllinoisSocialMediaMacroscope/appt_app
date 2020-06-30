@@ -29,6 +29,7 @@ def login():
 def logout():
      return
 
+
 @app.route('/', methods=['GET'])
 def homepage():
      locations = ["Carle", "UIUC", "Peoria"]
@@ -98,6 +99,40 @@ def list_available_appointments():
      return {"available_slots": available_slots}
 
 
+@app.route('/my-appointment', methods=['GET'])
+def list_my_appointment():
+     # TODO: hard code jane smith single user
+     person = "Jane Smith"
+
+     conn = get_db()
+     cur = conn.cursor()
+
+     # get the current user id
+     cur.execute("SELECT id FROM USERS WHERE fname = (?)", (person.split(' ')[0],))
+     # TODO error handling what if that user doesn't exist
+     user_id = cur.fetchone()
+
+     # get the appointment id;
+     cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
+     appt_id_claimed = cur.fetchone()
+
+     # show claimed appt in the appointments table
+     cur.execute("SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
+                 "a.location = l.id WHERE a.id = (?)", (appt_id_claimed['appointment'],))
+     results = cur.fetchall()
+
+     if results:
+          claimed_slot = {
+               "id": results[0]['id'],
+               "date": results[0]['date'],
+               "time": results[0]['time'],
+               "location": results[0]['location']}
+     else:
+          claimed_slot = {}
+
+     return {"claimed_slot": claimed_slot}
+
+
 @app.route('/submit', methods=['POST'])
 def submit_appointment():
      # TODO: here need to get the current user name;
@@ -140,17 +175,28 @@ def submit_appointment():
      if ((check_user is None) and (count_appt['count_appt']) < 25):
           cur.execute("INSERT INTO USER_APPOINTMENTS (user, appointment) VALUES (?,?)", (user_id['id'], appt_id['id']))
           conn.commit()
+
+          cur.execute("SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
+                      "a.location = l.id WHERE a.id = (?)", (appt_id['id'],))
+          results = cur.fetchall()
+
+          claimed_slot = {
+               "id": results[0]['id'],
+               "date": results[0]['date'],
+               "time": results[0]['time'],
+               "location": results[0]['location']}
+
+          cur.close()
+
+          return {"claimed_slot": claimed_slot}
+
      else:
           # TODO populate the error message to frontend
           cur.close()
           raise ValueError('Action not allowed. User already claimed a slot or slot is full.')
 
-     cur.close()
 
-     return {}
-
-
-@app.route('/cancel', methods=['POST'])
+@app.route('/cancel', methods=['DELETE'])
 def cancel_appointment():
 
      # TODO: here need to get the current user name;
@@ -185,6 +231,7 @@ def cancel_appointment():
           "location": results[0]['location']}
 
      return {"unclaimed_slot": unclaimed_slot}
+
 
 # TODO: this could be admin feature; see the current registered user and their timeslots
 # #5. SHOW USERS_APPOINTMENTS TABLE DATA
