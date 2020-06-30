@@ -160,35 +160,31 @@ def cancel_appointment():
      conn = get_db()
      cur = conn.cursor()
 
-     cur.execute("SELECT * FROM USER_APPOINTMENTS")
-     results = cur.fetchall()
-     for row in results:
-          print(row['user'], row['appointment'])
+     # get the current user id
+     cur.execute("SELECT id FROM USERS WHERE fname = (?)", (person.split(' ')[0],))
+     # TODO error handling what if that user doesn't exist
+     user_id = cur.fetchone()
 
-     # # get the current user id
-     # cur.execute("SELECT id FROM USERS WHERE fname = (?)", (person.split(' ')[0],))
-     # # TODO error handling what if that user doesn't exist
-     # user_id = cur.fetchone()
-     #
-     # # get the appointment id;
-     # cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
-     # appt_id_claimed = cur.fetchone()
-     #
-     # # delete that record in the database
-     # # cur.execute("DELETE FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
-     # # conn.commit()
-     #
-     # # show unclaimed appt in the appointments table
-     # cur.execute("SELECT * FROM APPOINTMENTS WHERE id = (?)", (appt_id_claimed['id'],))
-     # results = cur.fetchall()
-     #
-     # unclaimed_slot = {
-     #      "id": results[0]['id'],
-     #      "date": results[0]['date'],
-     #      "time": results[0]['time'],
-     #      "location": results[0]['location']}
-     #
-     # return {"unclaimed_slot": unclaimed_slot}
+     # get the appointment id;
+     cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
+     appt_id_claimed = cur.fetchone()
+
+     # delete that record in the database
+     cur.execute("DELETE FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
+     conn.commit()
+
+     # show unclaimed appt in the appointments table
+     cur.execute("SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
+                 "a.location = l.id WHERE a.id = (?)",(appt_id_claimed['appointment'],))
+     results = cur.fetchall()
+
+     unclaimed_slot = {
+          "id": results[0]['id'],
+          "date": results[0]['date'],
+          "time": results[0]['time'],
+          "location": results[0]['location']}
+
+     return {"unclaimed_slot": unclaimed_slot}
 
 # TODO: this could be admin feature; see the current registered user and their timeslots
 # #5. SHOW USERS_APPOINTMENTS TABLE DATA
