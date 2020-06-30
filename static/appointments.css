@@ -6,3 +6,12 @@ body{
 .filters{
     display:inline-block;
 }
+
+.highlight{
+    background: pink;
+    margin: 50px;
+    padding: 20px;
+    border: dashed;
+
+}
+

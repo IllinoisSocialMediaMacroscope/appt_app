@@ -1,5 +1,19 @@
 $(document).ready(function(){
     $("#available-appointments").find('tbody').empty();
+    $("#my-appointment").find('tbody').empty();
+    $.ajax({
+        url: "my-appointment",
+        type: "GET",
+        success: function (data) {
+           if ("claimed_slot" in data){
+                displayMyAppointment(data.claimed_slot)
+            }
+        },
+        error: function (jqXHR, exception) {
+            console.log(jqXHR.responseText);
+        }
+    });
+
     $.ajax({
         url: "list",
         type: "GET",
@@ -90,4 +104,13 @@ function updateAppointmentTable(available_slots) {
                 "<td>" + item.time + "</td>"
             + "</tr>");
     })
+}
+
+function displayMyAppointment(claimed_slots) {
+    $("#my-appointment").find('tbody').append(
+        "<tr>" +
+            "<td>" + claimed_slots.location + "</td>" +
+            "<td>" + claimed_slots.date + "</td>" +
+            "<td>" + claimed_slots.time + "</td>" +
+        "</tr>");
 }

@@ -17,10 +17,23 @@
     <title>Available Appointments</title>
 </head>
 <body>
-<h1>Available Appointments</h1>
-<div class="my-appointment">
-
+<div class="highlight">
+    <h2>Your Current Appointment is at:</h2>
+    <table class="table table-borderless" id="my-appointment">
+        <thead>
+        <tr>
+            <td>Location</td>
+            <td>Date</td>
+            <td>Time</td>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
 </div>
+
+<h1>Available Appointments</h1>
+
 <div class="filters form-inline">
     <select class="form-control" name="locations" id="location-select">
         <option value="">Location</option>
