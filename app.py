@@ -1,6 +1,6 @@
 import sqlite3
 
-from flask import Flask, render_template, request, g
+from flask import Flask, render_template, request, g, abort
 
 app = Flask(__name__)
 
@@ -109,15 +109,15 @@ def list_my_appointment():
 
      # get the current user id
      cur.execute("SELECT id FROM USERS WHERE fname = (?)", (person.split(' ')[0],))
-     # TODO error handling what if that user doesn't exist
      user_id = cur.fetchone()
+     if not user_id:
+          abort(404, 'Cannot find current user in USERS database table.')
 
      # get the appointment id;
      cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
      appt_id_claimed = cur.fetchone()
 
      if appt_id_claimed:
-          # show claimed appt in the appointments table
           cur.execute("SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
                       "a.location = l.id WHERE a.id = (?)", (appt_id_claimed['appointment'],))
           results = cur.fetchall()
@@ -140,21 +140,22 @@ def submit_appointment():
      if request.get_json() and request.get_json()['appt_id']:
           appt = request.get_json()['appt_id']
      else:
-          # TODO populate the error message to frontend
-          raise ValueError("Apppointment Id is a required field!")
+          abort(400, 'Apppointment Id is a required field!')
 
      conn = get_db()
      cur = conn.cursor()
 
      # get the current user id
      cur.execute("SELECT id FROM USERS WHERE fname = (?)", (person.split(' ')[0],))
-     # TODO error handling what if that user doesn't exist
      user_id = cur.fetchone()
+     if not user_id:
+          abort(404, 'Cannot find current user in USERS database table.')
 
      # get the appt id
      cur.execute("SELECT id FROM APPOINTMENTS WHERE id = (?)", (appt,))
-     # TODO error handling what if that appointment id doesn't exist
      appt_id = cur.fetchone()
+     if not appt_id:
+          abort(404, 'Cannot the selected appointment in the APPOINTMENTS database table.')
 
      # INSERT IF MAX 25 NOT REACHED PER APPOINTMENT ID
      cur.execute('''
@@ -190,14 +191,12 @@ def submit_appointment():
           return {"claimed_slot": claimed_slot}
 
      else:
-          # TODO populate the error message to frontend
           cur.close()
-          raise ValueError('Action not allowed. User already claimed a slot or slot is full.')
+          abort(403, 'Action not allowed. User already claimed a slot or slot is full.')
 
 
 @app.route('/cancel', methods=['DELETE'])
 def cancel_appointment():
-
      # TODO: here need to get the current user name;
      # TODO: hard code jane smith single user
      person = "Jane Smith"
@@ -207,48 +206,27 @@ def cancel_appointment():
 
      # get the current user id
      cur.execute("SELECT id FROM USERS WHERE fname = (?)", (person.split(' ')[0],))
-     # TODO error handling what if that user doesn't exist
      user_id = cur.fetchone()
+     if not user_id:
+          abort(404, 'Cannot find current user in USERS database table.')
 
-     # get the appointment id;
+     # get user's appointment id and delete
      cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
-     # TODO what if that user has no claimed appointment
      appt_id_claimed = cur.fetchone()
+     if appt_id_claimed:
+          cur.execute("DELETE FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
+          conn.commit()
 
-     # delete that record in the database
-     cur.execute("DELETE FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
-     conn.commit()
+          cur.execute("SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
+                      "a.location = l.id WHERE a.id = (?)", (appt_id_claimed['appointment'],))
+          results = cur.fetchall()
 
-     # show unclaimed appt in the appointments table
-     cur.execute("SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
-                 "a.location = l.id WHERE a.id = (?)",(appt_id_claimed['appointment'],))
-     results = cur.fetchall()
+          unclaimed_slot = {
+               "id": results[0]['id'],
+               "date": results[0]['date'],
+               "time": results[0]['time'],
+               "location": results[0]['location']}
 
-     unclaimed_slot = {
-          "id": results[0]['id'],
-          "date": results[0]['date'],
-          "time": results[0]['time'],
-          "location": results[0]['location']}
-
-     return {"unclaimed_slot": unclaimed_slot}
-
-
-# TODO: this could be admin feature; see the current registered user and their timeslots
-# #5. SHOW USERS_APPOINTMENTS TABLE DATA
-# 
-# cur.execute('''SELECT u.fname ||' '|| u.lname as Name, u.phone, l.name as Location, a.date, a.time
-# FROM USERS u
-# INNER JOIN USER_APPOINTMENTS ua ON u.id=ua.user
-# INNER JOIN APPOINTMENTS a ON ua.appointment = a.id
-# INNER JOIN LOCATIONS l ON a.location = l.id ''')
-#
-# results = cur.fetchall()
-#
-# claimed = [(row['Name'], row['phone'], row['Location'], row['date'], row['time']) for row in results]
-#
-# with open('scheduled_appts.csv', 'w', newline='') as f:
-#      writer = csv.writer(f, delimiter=',')
-#      writer.writerow(['name', 'phone', 'location', 'date', 'time'])
-#      writer.writerows(claimed)
-# 
-#
+          return {"unclaimed_slot": unclaimed_slot}
+     else:
+          abort(403, 'Action not allowed. This user currently has no appointment!')
