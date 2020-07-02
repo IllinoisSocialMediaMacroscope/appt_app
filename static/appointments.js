@@ -4,6 +4,7 @@ $(document).ready(function(){
         type: "GET",
         success: function (data) {
            if ("claimed_slot" in data){
+               $(".highlight").show();
                 displayMyAppointment(data.claimed_slot)
             }
         },

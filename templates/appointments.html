@@ -17,6 +17,20 @@
     <title>Available Appointments</title>
 </head>
 <body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="collapse navbar-collapse">
+        <div class="navbar-nav">
+            {% if user %}
+            <p class="navbar-text">{{user}}</p>
+            {% else %}
+            <a class="nav-item nav-link navbar-text active" href="login">LOGIN</a>
+            {% endif %}
+            <a class="nav-item navbar-text nav-link" href="logout">LOGOUT</a>
+        </div>
+    </div>
+</nav>
+
 <div class="highlight">
     <h2>Your Current Appointment is at:</h2>
     <table class="table table-borderless" id="my-appointment">
@@ -33,41 +47,44 @@
     <button class="btn btn-danger" type="submit" id="cancel-appointment" value="cancel">Cancel</button>
 </div>
 
-<h1>Available Appointments</h1>
+<div class="list">
+    <h1>Available Appointments</h1>
 
-<div class="filters form-inline">
-    <select class="form-control" name="locations" id="location-select">
-        <option value="">Location</option>
-        {% for location in locations %}
-        <option value="{{location}}">{{location}}</option>
-        {% endfor %}
-    </select>
-    <!--    TODO default to today, and minimum selection should be today-->
-    <input class="form-control" type="date" name="dates" id="date-select" value="" min="2020-07-01"
-           max="2021-01-01">
-    <select class="form-control" name="timeslots" id="timeslot-select">
-        <option value="">Time Slots</option>
-        {% for time in times %}
-        <option value="{{time}}">{{time}}</option>
-        {% endfor %}
-    </select>
-    <button class="btn btn-primary" type="submit" id="submit-appointment" value="submit">Submit</button>
+    <div class="filters form-inline">
+        <select class="form-control" name="locations" id="location-select">
+            <option value="">Location</option>
+            {% for location in locations %}
+            <option value="{{location}}">{{location}}</option>
+            {% endfor %}
+        </select>
+        <!--    TODO default to today, and minimum selection should be today-->
+        <input class="form-control" type="date" name="dates" id="date-select" value="" min="2020-07-01"
+               max="2021-01-01">
+        <select class="form-control" name="timeslots" id="timeslot-select">
+            <option value="">Time Slots</option>
+            {% for time in times %}
+            <option value="{{time}}">{{time}}</option>
+            {% endfor %}
+        </select>
+        <button class="btn btn-primary" type="submit" id="submit-appointment" value="submit">Submit</button>
+    </div>
+
+    <div class="tables">
+        <table class="table table-sm" id="available-appointments">
+            <thead>
+            <tr>
+                <td>Select</td>
+                <td>Location</td>
+                <td>Date</td>
+                <td>Time</td>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<div class="tables">
-    <table class="table table-sm" id="available-appointments">
-        <thead>
-        <tr>
-            <td>Select</td>
-            <td>Location</td>
-            <td>Date</td>
-            <td>Time</td>
-        </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
-</div>
 
 <script src="{{url_for('static', filename='appointments.js')}}"></script>
 

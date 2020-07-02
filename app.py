@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, render_template, request, g, abort, redirect, url_for
 from flask_login import (
      LoginManager,
@@ -9,7 +11,6 @@ from oic.oic import Client
 from oic.oic.message import AuthorizationResponse, RegistrationResponse, ClaimsRequest, Claims
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 from oic.utils.http_util import Redirect
-import os
 
 from db import get_db
 from user import User
@@ -145,20 +146,26 @@ def homepage():
           "05:30 PM",
           "06:00 PM",
      ]
-     return render_template('appointments.html', locations=locations, times=times)
+
+     if current_user.is_authenticated:
+          user = "Hello! " + current_user.fname + " " + current_user.lname
+     else:
+          user = None
+
+     return render_template('appointments.html', locations=locations, times=times, user=user)
 
 
 @app.route('/list', methods=['GET'])
 def list_available_appointments():
      query = '''SELECT a.id, a.date, a.time, l.name AS location
-     FROM APPOINTMENTS a INNER JOIN LOCATIONS l
-     ON a.location = l.id
-     WHERE a.id NOT IN (
-     	SELECT appointment
-     	FROM USER_APPOINTMENTS
-     	GROUP BY
-     		appointment
-     	HAVING COUNT(appointment) >= 25)'''
+          FROM APPOINTMENTS a INNER JOIN LOCATIONS l
+          ON a.location = l.id
+          WHERE a.id NOT IN (
+             SELECT appointment
+             FROM USER_APPOINTMENTS
+             GROUP BY
+                 appointment
+             HAVING COUNT(appointment) >= 25)'''
 
      location = request.args.get('location')
      if location:
@@ -191,9 +198,6 @@ def list_available_appointments():
 @app.route('/my-appointment', methods=['GET'])
 def list_my_appointment():
      if current_user.is_authenticated:
-          print(current_user.id, current_user.fname, current_user.lname, current_user.email, current_user.phone,
-                current_user.date)
-
           conn = get_db()
           cur = conn.cursor()
 
@@ -206,115 +210,113 @@ def list_my_appointment():
                     "SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
                     "a.location = l.id WHERE a.id = (?)", (appt_id_claimed['appointment'],))
                results = cur.fetchall()
+               cur.close()
+
                claimed_slot = {
                     "id": results[0]['id'],
                     "date": results[0]['date'],
                     "time": results[0]['time'],
                     "location": results[0]['location']}
           else:
+               cur.close()
                claimed_slot = {}
 
           return {"claimed_slot": claimed_slot}
 
      else:
-          abort(403, 'User not Authorized!')
+          abort(403, 'User not Authorized! Please login first.')
 
 
 @app.route('/submit', methods=['POST'])
 def submit_appointment():
-     # TODO: here need to get the current user name;
-     # TODO: hard code jane smith single user
-     person = "Jane Smith"
-     if request.get_json() and request.get_json()['appt_id']:
-          appt = request.get_json()['appt_id']
-     else:
-          abort(400, 'Apppointment Id is a required field!')
+     if current_user.is_authenticated:
+          if request.get_json() and request.get_json()['appt_id']:
+               appt = request.get_json()['appt_id']
+          else:
+               abort(400, 'Apppointment Id is a required field!')
 
-     conn = get_db()
-     cur = conn.cursor()
+          conn = get_db()
+          cur = conn.cursor()
 
-     # get the current user id
-     cur.execute("SELECT id FROM USERS WHERE fname = (?)", (person.split(' ')[0],))
-     user_id = cur.fetchone()
-     if not user_id:
-          abort(404, 'Cannot find current user in USERS database table.')
+          # get the appt id
+          cur.execute("SELECT id FROM APPOINTMENTS WHERE id = (?)", (appt,))
+          appt_id = cur.fetchone()
+          if not appt_id:
+               abort(404, 'Cannot the selected appointment in the APPOINTMENTS database table.')
 
-     # get the appt id
-     cur.execute("SELECT id FROM APPOINTMENTS WHERE id = (?)", (appt,))
-     appt_id = cur.fetchone()
-     if not appt_id:
-          abort(404, 'Cannot the selected appointment in the APPOINTMENTS database table.')
+          # INSERT IF MAX 25 NOT REACHED PER APPOINTMENT ID
+          cur.execute('''
+             SELECT COUNT(appointment) as count_appt
+             FROM USER_APPOINTMENTS
+             WHERE appointment = (?)''', (appt_id['id'],))
 
-     # INSERT IF MAX 25 NOT REACHED PER APPOINTMENT ID
-     cur.execute('''
-     	SELECT COUNT(appointment) as count_appt
-     	FROM USER_APPOINTMENTS
-     	WHERE appointment = (?)''', (appt_id['id'],))
+          count_appt = cur.fetchone()
 
-     count_appt = cur.fetchone()
+          cur.execute('''
+             SELECT user
+             FROM USER_APPOINTMENTS
+             WHERE user = (?)''', (current_user.id,))
 
-     cur.execute('''
-     	SELECT user
-     	FROM USER_APPOINTMENTS
-     	WHERE user = (?)''', (user_id['id'],))
+          check_user = cur.fetchone()
 
-     check_user = cur.fetchone()
+          if ((check_user is None) and (count_appt['count_appt']) < 25):
+               cur.execute("INSERT INTO USER_APPOINTMENTS (user, appointment) VALUES (?,?)",
+                           (current_user.id, appt_id['id']))
+               conn.commit()
 
-     if ((check_user is None) and (count_appt['count_appt']) < 25):
-          cur.execute("INSERT INTO USER_APPOINTMENTS (user, appointment) VALUES (?,?)", (user_id['id'], appt_id['id']))
-          conn.commit()
+               cur.execute(
+                    "SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
+                    "a.location = l.id WHERE a.id = (?)", (appt_id['id'],))
+               results = cur.fetchall()
 
-          cur.execute("SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
-                      "a.location = l.id WHERE a.id = (?)", (appt_id['id'],))
-          results = cur.fetchall()
+               claimed_slot = {
+                    "id": results[0]['id'],
+                    "date": results[0]['date'],
+                    "time": results[0]['time'],
+                    "location": results[0]['location']}
 
-          claimed_slot = {
-               "id": results[0]['id'],
-               "date": results[0]['date'],
-               "time": results[0]['time'],
-               "location": results[0]['location']}
+               cur.close()
 
-          cur.close()
+               return {"claimed_slot": claimed_slot}
 
-          return {"claimed_slot": claimed_slot}
+          else:
+               cur.close()
+               abort(403, 'Action not allowed. User already claimed a slot or slot is full.')
 
      else:
-          cur.close()
-          abort(403, 'Action not allowed. User already claimed a slot or slot is full.')
+          abort(403, 'User not Authorized! Please login first.')
 
 
 @app.route('/cancel', methods=['DELETE'])
 def cancel_appointment():
-     # TODO: here need to get the current user name;
-     # TODO: hard code jane smith single user
-     person = "Jane Smith"
+     if current_user.is_authenticated:
 
-     conn = get_db()
-     cur = conn.cursor()
+          conn = get_db()
+          cur = conn.cursor()
 
-     # get the current user id
-     cur.execute("SELECT id FROM USERS WHERE fname = (?)", (person.split(' ')[0],))
-     user_id = cur.fetchone()
-     if not user_id:
-          abort(404, 'Cannot find current user in USERS database table.')
+          # get user's appointment id and delete
+          cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (current_user.id,))
+          appt_id_claimed = cur.fetchone()
+          if appt_id_claimed:
+               cur.execute("DELETE FROM USER_APPOINTMENTS WHERE user = (?)", (current_user.id,))
+               conn.commit()
 
-     # get user's appointment id and delete
-     cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
-     appt_id_claimed = cur.fetchone()
-     if appt_id_claimed:
-          cur.execute("DELETE FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
-          conn.commit()
+               cur.execute(
+                    "SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
+                    "a.location = l.id WHERE a.id = (?)", (appt_id_claimed['appointment'],))
+               results = cur.fetchall()
+               cur.close()
 
-          cur.execute("SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
-                      "a.location = l.id WHERE a.id = (?)", (appt_id_claimed['appointment'],))
-          results = cur.fetchall()
+               unclaimed_slot = {
+                    "id": results[0]['id'],
+                    "date": results[0]['date'],
+                    "time": results[0]['time'],
+                    "location": results[0]['location']}
 
-          unclaimed_slot = {
-               "id": results[0]['id'],
-               "date": results[0]['date'],
-               "time": results[0]['time'],
-               "location": results[0]['location']}
+               return {"unclaimed_slot": unclaimed_slot}
+          else:
+               cur.close()
+               abort(403, 'Action not allowed. This user currently has no appointment!')
 
-          return {"unclaimed_slot": unclaimed_slot}
      else:
-          abort(403, 'Action not allowed. This user currently has no appointment!')
+          abort(403, 'User not Authorized! Please login first.')
