@@ -1,9 +1,31 @@
 import sqlite3
 
 from flask import Flask, render_template, request, g, abort
+from oic import rndstr
+from oic.oic import Client
+from oic.oic.message import AuthorizationResponse, RegistrationResponse, ClaimsRequest, Claims
+from oic.utils.authn.client import CLIENT_AUTHN_METHOD
+from oic.utils.http_util import Redirect
 
 app = Flask(__name__)
+app.config.from_pyfile('config.py', silent=True)
 
+# create oidc client
+client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
+
+# get authentication provider details by hitting the issuer URL
+provider_info = client.provider_config(app.config["ISSUER_URL"])
+
+# store registration details
+info = {
+     "client_id": app.config["CLIENT_ID"],
+     "client_secret": app.config["CLIENT_SECRET"],
+     "redirect_uris": app.config["REDIRECT_URIS"]
+}
+client_reg = RegistrationResponse(**info)
+client.store_registration_info(client_reg)
+
+session = dict()
 
 def get_db():
      conn = g._database = sqlite3.connect('appt_tracker.db')
@@ -22,7 +44,49 @@ def close_connection(exception):
 
 @app.route('/login')
 def login():
-     return render_template('login.html', )
+     session['state'] = rndstr()
+     session['nonce'] = rndstr()
+
+     # setup claim request
+     claims_request = ClaimsRequest(
+          userinfo = Claims(uiucedu_uin={"essential": True})
+     )
+
+     args = {
+          "client_id": client.client_id,
+          "response_type": "code",
+          "scope": app.config["SCOPES"],
+          "nonce": session["nonce"],
+          "redirect_uri":client.registration_response["redirect_uris"][0],
+          "state":session["state"],
+          "claims":claims_request
+     }
+
+     auth_req = client.construct_AuthorizationRequest(request_args=args)
+     login_url = auth_req.request(client.authorization_endpoint)
+
+     return Redirect(login_url)
+
+
+@app.route('/callback')
+def callback():
+     response = request.environ["QUERY_STRING"]
+
+     authentication_response = client.parse_response(AuthorizationResponse, info=response, sformat="urlencoded")
+
+     code = authentication_response["code"]
+     assert authentication_response["state"] == session["state"]
+
+     args = {
+          "code":code
+     }
+
+     token_response = client.do_access_token_request(state=authentication_response["state"], request_args=args,
+                                                     authn_method="client_secret_basic")
+
+     user_info = client.do_user_info_request(state=authentication_response["state"])
+
+     return user_info.to_json()
 
 
 @app.route('/logout')
