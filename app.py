@@ -1,13 +1,23 @@
-import sqlite3
-
-from flask import Flask, render_template, request, g, abort
+from flask import Flask, render_template, request, g, abort, redirect, url_for
+from flask_login import (
+     LoginManager,
+     login_user,
+     current_user
+)
 from oic import rndstr
 from oic.oic import Client
 from oic.oic.message import AuthorizationResponse, RegistrationResponse, ClaimsRequest, Claims
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 from oic.utils.http_util import Redirect
+import os
+
+from db import get_db
+from user import User
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
+
+# OIDC setting
 app.config.from_pyfile('config.py', silent=True)
 
 # create oidc client
@@ -27,12 +37,14 @@ client.store_registration_info(client_reg)
 
 session = dict()
 
-def get_db():
-     conn = g._database = sqlite3.connect('appt_tracker.db')
-     conn.execute('''PRAGMA foreign_keys = 1''')
-     conn.row_factory = sqlite3.Row
+# LOGIN management setting
+login_manager = LoginManager()
+login_manager.init_app(app)
 
-     return conn
+
+@login_manager.user_loader
+def load_user(user_id):
+     return User.get(user_id)
 
 
 @app.teardown_appcontext
@@ -78,7 +90,7 @@ def callback():
      assert authentication_response["state"] == session["state"]
 
      args = {
-          "code":code
+          "code": code
      }
 
      token_response = client.do_access_token_request(state=authentication_response["state"], request_args=args,
@@ -86,7 +98,20 @@ def callback():
 
      user_info = client.do_user_info_request(state=authentication_response["state"])
 
-     return user_info.to_json()
+     # see if that user is in local database or not
+     user = User.search(user_info["given_name"], user_info["family_name"])
+
+     # create that user in local db if that person is not there;
+     if not user:
+          user = User.create(fname=user_info["given_name"],
+                             lname=user_info["family_name"],
+                             email=user_info["email"],
+                             phone=999, date="NA")
+
+     # login that user
+     login_user(user)
+
+     return redirect(url_for("homepage"))
 
 
 @app.route('/logout')
@@ -165,35 +190,34 @@ def list_available_appointments():
 
 @app.route('/my-appointment', methods=['GET'])
 def list_my_appointment():
-     # TODO: hard code jane smith single user
-     person = "Jane Smith"
+     if current_user.is_authenticated:
+          print(current_user.id, current_user.fname, current_user.lname, current_user.email, current_user.phone,
+                current_user.date)
 
-     conn = get_db()
-     cur = conn.cursor()
+          conn = get_db()
+          cur = conn.cursor()
 
-     # get the current user id
-     cur.execute("SELECT id FROM USERS WHERE fname = (?)", (person.split(' ')[0],))
-     user_id = cur.fetchone()
-     if not user_id:
-          abort(404, 'Cannot find current user in USERS database table.')
+          # get the appointment id;
+          cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (current_user.id,))
+          appt_id_claimed = cur.fetchone()
 
-     # get the appointment id;
-     cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (user_id['id'],))
-     appt_id_claimed = cur.fetchone()
+          if appt_id_claimed:
+               cur.execute(
+                    "SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
+                    "a.location = l.id WHERE a.id = (?)", (appt_id_claimed['appointment'],))
+               results = cur.fetchall()
+               claimed_slot = {
+                    "id": results[0]['id'],
+                    "date": results[0]['date'],
+                    "time": results[0]['time'],
+                    "location": results[0]['location']}
+          else:
+               claimed_slot = {}
 
-     if appt_id_claimed:
-          cur.execute("SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
-                      "a.location = l.id WHERE a.id = (?)", (appt_id_claimed['appointment'],))
-          results = cur.fetchall()
-          claimed_slot = {
-               "id": results[0]['id'],
-               "date": results[0]['date'],
-               "time": results[0]['time'],
-               "location": results[0]['location']}
+          return {"claimed_slot": claimed_slot}
+
      else:
-          claimed_slot = {}
-
-     return {"claimed_slot": claimed_slot}
+          abort(403, 'User not Authorized!')
 
 
 @app.route('/submit', methods=['POST'])
