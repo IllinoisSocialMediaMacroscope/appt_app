@@ -23,10 +23,10 @@
         <div class="navbar-nav">
             {% if user %}
             <p class="navbar-text">{{user}}</p>
+            <a class="nav-item navbar-text nav-link" href="logout">LOGOUT</a>
             {% else %}
             <a class="nav-item nav-link navbar-text active" href="login">LOGIN</a>
             {% endif %}
-            <a class="nav-item navbar-text nav-link" href="logout">LOGOUT</a>
         </div>
     </div>
 </nav>
