@@ -323,3 +323,38 @@ def cancel_appointment():
 
      else:
           abort(403, 'User not Authorized! Please login first.')
+
+
+@app.route('/list-all-appointments', methods=['GET'])
+def list_all_appointments():
+     if current_user.is_authenticated:
+          conn = get_db()
+          cur = conn.cursor()
+
+          user = User.get(current_user.id)
+
+          # if admin
+          if user.netid in app.config['ADMIN_NETID_LIST']:
+               cur.execute('''SELECT u.netid as NetID, u.fname ||' '|| u.lname as Name, u.email, l.name as Location, 
+               a.date, a.time FROM USERS u INNER JOIN USER_APPOINTMENTS ua ON u.id=ua.user 
+               INNER JOIN APPOINTMENTS a ON ua.appointment = a.id
+               INNER JOIN LOCATIONS l ON a.location = l.id ''')
+               results = cur.fetchall()
+               cur.close()
+
+               all_claimed_slot = [{
+                    "netid": row["NetID"],
+                    "name": row['Name'],
+                    "email": row['email'],
+                    "date": row['date'],
+                    "time": row['time'],
+                    "location": row['Location']} for row in results
+               ]
+          else:
+               cur.close()
+               abort(403, 'This is an administrator only feature!')
+
+          return {"all_claimed_slot": all_claimed_slot}
+
+     else:
+          abort(403, 'User not Authorized! Please login first.')

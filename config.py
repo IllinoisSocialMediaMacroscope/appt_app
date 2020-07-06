@@ -19,3 +19,4 @@ SCOPES = ["openid", "profile", "email", "offline_access"]  # Other OIDC scopes c
 CLIENT_ID = "***REMOVED***"
 CLIENT_SECRET = "***REMOVED***"
 REDIRECT_URIS = ["http://***REMOVED***:5000/callback"]
+ADMIN_NETID_LIST = ["cwang138", "npvance2", "ahetrick"]
