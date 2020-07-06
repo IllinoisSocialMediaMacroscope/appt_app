@@ -58,8 +58,7 @@
             {% endfor %}
         </select>
         <!--    TODO default to today, and minimum selection should be today-->
-        <input class="form-control" type="date" name="dates" id="date-select" value="" min="2020-07-01"
-               max="2021-01-01">
+        <input class="form-control" type="date" name="dates" id="date-select">
         <select class="form-control" name="timeslots" id="timeslot-select">
             <option value="">Time Slots</option>
             {% for time in times %}

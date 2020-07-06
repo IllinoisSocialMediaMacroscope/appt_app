@@ -1,4 +1,12 @@
 $(document).ready(function(){
+    // default to only show today otherwise too much data
+    var today = new Date();
+    var yyyy = today.getFullYear();
+    var mm = today.getMonth() > 9 ? today.getMonth() + 1 : '0' + (today.getMonth() +1);
+    var dd = today.getDate() > 10 ? today.getDate() : '0' + today.getDate();
+    var date =  yyyy + "-" + mm + "-" + dd;
+    $("#date-select").val(date).prop("min", date);
+
     $.ajax({
         url: "my-appointment",
         type: "GET",
@@ -16,6 +24,9 @@ $(document).ready(function(){
     $.ajax({
         url: "list",
         type: "GET",
+        data: {
+            "date": date,
+        },
         success: function (data) {
            if ("available_slots" in data){
                 updateAppointmentTable(data.available_slots)

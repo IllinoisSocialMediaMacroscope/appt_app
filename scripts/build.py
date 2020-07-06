@@ -13,7 +13,7 @@ cur.execute('''CREATE TABLE IF NOT EXISTS USERS
              lname text,
              email text,
              uin int,
-             phone text, 
+             phone text) 
              ''')
           
 # Create table - LOCATIONS
