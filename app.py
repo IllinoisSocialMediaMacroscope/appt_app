@@ -102,14 +102,13 @@ def callback():
      user_info = client.do_user_info_request(state=authentication_response["state"])
 
      # see if that user is in local database or not
-     user = User.search(user_info["given_name"], user_info["family_name"])
+     user = User.search(user_info["preferred_username"])
 
      # create that user in local db if that person is not there;
      if not user:
-          user = User.create(fname=user_info["given_name"],
-                             lname=user_info["family_name"],
-                             email=user_info["email"],
-                             phone=999, date="NA")
+          user = User.create(netid=user_info["preferred_username"], fname=user_info["given_name"],
+                             lname=user_info["family_name"], email=user_info["email"], uin=user_info["uiucedu_uin"],
+                             phone="NA")
 
      # login that user
      login_user(user)

@@ -9,7 +9,7 @@ $(document).ready(function(){
             }
         },
         error: function (jqXHR, exception) {
-            alert(jqXHR.responseText);
+            console.log(jqXHR.responseText);
         }
     });
 

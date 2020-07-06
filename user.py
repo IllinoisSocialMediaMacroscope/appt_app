@@ -5,13 +5,14 @@ from db import get_db
 
 class User(UserMixin):
 
-    def __init__(self, id_, fname, lname, email, phone, date):
+    def __init__(self, id_, netid, fname, lname, email, uin, phone):
         self.id = id_
+        self.netid = netid
         self.fname = fname
         self.lname = lname
         self.email = email
+        self.uin = uin
         self.phone = phone
-        self.date = date
 
     @staticmethod
     def get(user_id):
@@ -22,36 +23,38 @@ class User(UserMixin):
         if not user_record:
             return None
 
-        user = User(id_=user_record['id'], fname=user_record['fname'], lname=user_record['lname'],
-                    email=user_record['email'], phone=user_record['phone'], date=user_record['date'])
+        user = User(id_=user_record['id'], netid=user_record['netid'], fname=user_record['fname'],
+                    lname=user_record['lname'], email=user_record['email'], uin=user_record['uin'],
+                    phone=user_record['phone'])
 
         return user
 
     @staticmethod
-    def search(fname, lname):
+    def search(netid):
         conn = get_db()
         cur = conn.cursor()
 
         # get the current user id
-        cur.execute("SELECT * FROM USERS WHERE fname = (?) AND lname = (?) ", (fname, lname))
+        cur.execute("SELECT * FROM USERS WHERE netid = (?)", (netid,))
         user_record = cur.fetchone()
         if not user_record:
             return None
 
-        user = User(id_=user_record['id'], fname=user_record['fname'], lname=user_record['lname'],
-                    email=user_record['email'], phone=user_record['phone'], date=user_record['date'])
+        user = User(id_=user_record['id'], netid=user_record['netid'], fname=user_record['fname'],
+                    lname=user_record['lname'], email=user_record['email'], uin=user_record['uin'],
+                    phone=user_record['phone'])
 
         return user
 
     @staticmethod
-    def create(fname, lname, email, phone, date):
+    def create(netid, fname, lname, email, uin, phone):
         conn = get_db()
         cur = conn.cursor()
 
-        cur.execute("INSERT INTO USERS (fname, lname, email, phone, date) VALUES (?,?,?,?,?)", (fname, lname, email,
-                                                                                                phone, date), )
+        cur.execute("INSERT INTO USERS (netid, fname, lname, email, uin, phone) VALUES (?,?,?,?,?,?)", (netid, fname,
+                                                                                                        lname, email,
+                                                                                                        uin, phone,))
         conn.commit()
-        user = User(id_=cur.lastrowid, fname=fname, lname=lname,
-                    email=email, phone=phone, date=date)
+        user = User(id_=cur.lastrowid, netid=netid, fname=fname, lname=lname, email=email, uin=uin, phone=phone)
 
         return user
