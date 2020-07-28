@@ -29,7 +29,8 @@ cur.execute('''CREATE TABLE IF NOT EXISTS LOCATIONS
 cur.execute('''CREATE TABLE IF NOT EXISTS APPOINTMENTS
              (id INTEGER PRIMARY KEY NOT NULL, 
              date date, 
-             time string, 
+             time string,
+             week INTEGER,
              location INTEGER,
              FOREIGN KEY (location) REFERENCES LOCATIONS (id))
              ''')
