@@ -266,11 +266,11 @@ def submit_appointment():
           if not count_user_week:
                count_user_week = 0
 
-          if count_appt['count_appt'] == 120:
+          if count_appt['count_appt'] == 60:
                print('The appointment block has reached maximum capacity. Please choose another block in a different week.')
           elif count_user_week['count_week'] == 2: 
                print('You have reached your maximum number of appointments for that week. Please choose another week.')
-          elif( (count_appt['count_appt'] < 120 ) and (count_user_week['count_week'] < 2) ):
+          elif( (count_appt['count_appt'] < 60 ) and (count_user_week['count_week'] < 2) ):
                cur.execute("INSERT INTO USER_APPOINTMENTS (user, appointment) VALUES (?,?)", 
                          (current_user.id, appt_id['id']))
                conn.commit() 
