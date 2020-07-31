@@ -232,7 +232,9 @@ def list_my_appointment():
 
 @app.route('/submit', methods=['POST'])
 def submit_appointment():
+
      if current_user.is_authenticated:
+
           if request.get_json() and request.get_json()['appt_id']:
                appt_id = request.get_json()['appt_id']
           else:
@@ -252,6 +254,11 @@ def submit_appointment():
              SELECT COUNT(appointment) as count_appt
              FROM USER_APPOINTMENTS
              WHERE appointment = (?)''', (appt['id'],))
+          count_appt = cur.fetchone()
+          if not count_appt:
+               count_appt_num = 0
+          else:
+               count_appt_num = count_appt['count_appt']
 
           cur.execute('''
                SELECT COUNT(a.week) as count_week
@@ -259,22 +266,26 @@ def submit_appointment():
                INNER JOIN APPOINTMENTS a 
                ON ua.appointment = a.id
                WHERE ua.user = (?) and a.week = (?)
-               GROUP BY ua.user''', (current_user.id, appt['week'],) )
+               GROUP BY ua.user''', (current_user.id, appt['week'],))
 
           count_user_week = cur.fetchone()
           if not count_user_week:
-               count_user_week = 0
-
-          if count_user_week['count_appt'] >= 60:
-               cur.close()
-               abort(400, 'The appointment block has reached maximum capacity. Please choose another block in a ' +
-                       'different week.')
-          elif count_user_week['count_week'] >= 2:
-               cur.close()
-               abort(400, 'You have reached your maximum number of appointments for that week. Please choose another week.')
+               count_user_week_num = 0
           else:
-               cur.execute("INSERT INTO USER_APPOINTMENTS (user, appointment) VALUES (?,?)", (current_user.id, appt['id']))
-               conn.commit() 
+               count_user_week_num = count_user_week['count_week']
+
+          if count_appt_num >= 60:
+               cur.close()
+               abort(400, 'The appointment block has reached maximum capacity. Please choose another block in a ' \
+                          'different week.')
+          elif count_user_week_num >= 2:
+               cur.close()
+               abort(400,
+                     'You have reached your maximum number of appointments for that week. Please choose another week.')
+          else:
+               cur.execute("INSERT INTO USER_APPOINTMENTS (user, appointment) VALUES (?,?)",
+                           (current_user.id, appt['id']))
+               conn.commit()
 
                cur.execute(
                     "SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
@@ -290,7 +301,6 @@ def submit_appointment():
                cur.close()
 
                return {"claimed_slot": claimed_slot}
-
      else:
           abort(403, 'User not Authorized! Please login first.')
 
