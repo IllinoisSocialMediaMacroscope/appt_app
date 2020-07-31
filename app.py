@@ -206,23 +206,22 @@ def list_my_appointment():
 
           # get the appointment id;
           cur.execute("SELECT appointment FROM USER_APPOINTMENTS WHERE user = (?)", (current_user.id,))
-          appt_id_claimed = cur.fetchone()
+          appt_id_list_claimed = cur.fetchall()
 
-          if appt_id_claimed:
-               cur.execute(
-                    "SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
-                    "a.location = l.id WHERE a.id = (?)", (appt_id_claimed['appointment'],))
-               results = cur.fetchall()
-               cur.close()
+          claimed_slot = []
+          if appt_id_list_claimed:
+               for appt_id_claimed in appt_id_list_claimed:
+                    cur.execute(
+                         "SELECT a.id, a.date, a.time, l.name as location FROM APPOINTMENTS a INNER JOIN LOCATIONS l ON "
+                         "a.location = l.id WHERE a.id = (?)", (appt_id_claimed['appointment'],))
+                    result = cur.fetchone()
+                    claimed_slot.append({
+                         "id": result['id'],
+                         "date": result['date'],
+                         "time": result['time'],
+                         "location": result['location']})
 
-               claimed_slot = {
-                    "id": results[0]['id'],
-                    "date": results[0]['date'],
-                    "time": results[0]['time'],
-                    "location": results[0]['location']}
-          else:
-               cur.close()
-               claimed_slot = {}
+          cur.close()
 
           return {"claimed_slot": claimed_slot}
 

@@ -137,11 +137,13 @@ function updateAppointmentTable(available_slots) {
 function displayMyAppointment(claimed_slot) {
     $("#my-appointment").find('tbody').empty();
     if (!$.isEmptyObject(claimed_slot)){
-        $("#my-appointment").find('tbody').append(
-        "<tr>" +
-            "<td>" + claimed_slot.location + "</td>" +
-            "<td>" + claimed_slot.date + "</td>" +
-            "<td>" + claimed_slot.time + "</td>" +
-        "</tr>");
+        $.each(claimed_slot, function (i, item) {
+            $("#my-appointment").find('tbody').append(
+                "<tr>" +
+                "<td>" + item.location + "</td>" +
+                "<td>" + item.date + "</td>" +
+                "<td>" + item.time + "</td>" +
+                "</tr>");
+        });
     }
 }
