@@ -4,3 +4,4 @@ __pycache__
 .idea/
 config.py
 *.mp4
+command.sh
