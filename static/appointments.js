@@ -77,13 +77,21 @@ $("#submit-appointment").on("click", function() {
 
 });
 
-$("#cancel-appointment").on("click", function() {
+/**
+ * cancelling
+ */
+$("#my-appointment").on("click", "button", function() {
+    var appt_id = $(this).attr('id');
     $.ajax({
         url: "cancel",
         type: "DELETE",
+        contentType: 'application/json',
+        data:JSON.stringify({
+            "appt_id":appt_id
+        }),
         success: function (data) {
-            alert("your appointment:" + JSON.stringify(data) + "has successfully been canceled!")
-            displayMyAppointment({});
+            alert("your appointment:" + JSON.stringify(data) + "has successfully been canceled!");
+            window.location.href=window.location.href;
         },
         error: function (jqXHR, exception) {
             alert(jqXHR.responseText);
@@ -137,11 +145,15 @@ function updateAppointmentTable(available_slots) {
 function displayMyAppointment(claimed_slot) {
     $("#my-appointment").find('tbody').empty();
     if (!$.isEmptyObject(claimed_slot)){
-        $("#my-appointment").find('tbody').append(
-        "<tr>" +
-            "<td>" + claimed_slot.location + "</td>" +
-            "<td>" + claimed_slot.date + "</td>" +
-            "<td>" + claimed_slot.time + "</td>" +
-        "</tr>");
+        $.each(claimed_slot, function (i, item) {
+            $("#my-appointment").find('tbody').append(
+                "<tr>" +
+                "<td>" + item.location + "</td>" +
+                "<td>" + item.date + "</td>" +
+                "<td>" + item.time + "</td>" +
+                "<td><button class=\"btn btn-danger\" type=\"submit\" id=\"" + item.id + "\"" +
+                " value=\"" + item.id + "\">Cancel</button></td>" +
+                "</tr>");
+        });
     }
 }
