@@ -7,19 +7,19 @@ $(document).ready(function(){
     var date =  yyyy + "-" + mm + "-" + dd;
     $("#date-select").val(date).prop("min", date);
 
-    $.ajax({
-        url: "my-appointment",
-        type: "GET",
-        success: function (data) {
-           if ("claimed_slot" in data){
-               $(".highlight").show();
-                displayMyAppointment(data.claimed_slot)
-            }
-        },
-        error: function (jqXHR, exception) {
-            console.log(jqXHR.responseText);
-        }
-    });
+    // $.ajax({
+    //     url: "my-appointment",
+    //     type: "GET",
+    //     success: function (data) {
+    //        if ("claimed_slot" in data){
+    //            $(".highlight").show();
+    //             displayMyAppointment(data.claimed_slot)
+    //         }
+    //     },
+    //     error: function (jqXHR, exception) {
+    //         console.log(jqXHR.responseText);
+    //     }
+    // });
 
     $.ajax({
         url: "list",
@@ -107,14 +107,12 @@ function filterOnChange() {
         var date = "";
     }
 
-    var time = $("#timeslot-select option:selected").val();
     $.ajax({
         url: "list",
         type: "GET",
         data: {
             "location": location,
-            "date": date,
-            "time": time,
+            "date": date
         },
         success: function (data) {
             if ("available_slots" in data) {
@@ -133,11 +131,10 @@ function updateAppointmentTable(available_slots) {
         $("#available-appointments").find('tbody').append(
             "<tr>" +
             "<td>" +
-            "<input type=\"checkbox\" id=\"" + item.id + "\" name=\"submit\" value=\"" + item.id + "\">" +
+            "<input type=\"checkbox\" location_id=\"" + item.location_id + "\">" +
             "</td>" +
             "<td>" + item.location + "</td>" +
-            "<td>" + item.date + "</td>" +
-                "<td>" + item.time + "</td>"
+            "<td>" + item.datetime + "</td>"
             + "</tr>");
     })
 }
@@ -149,8 +146,7 @@ function displayMyAppointment(claimed_slot) {
             $("#my-appointment").find('tbody').append(
                 "<tr>" +
                 "<td>" + item.location + "</td>" +
-                "<td>" + item.date + "</td>" +
-                "<td>" + item.time + "</td>" +
+                "<td>" + item.datetime + "</td>" +
                 "<td><button class=\"btn btn-danger\" type=\"submit\" id=\"" + item.id + "\"" +
                 " value=\"" + item.id + "\">Cancel</button></td>" +
                 "</tr>");

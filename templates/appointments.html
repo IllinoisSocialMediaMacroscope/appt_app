@@ -37,8 +37,7 @@
         <thead>
         <tr>
             <td>Location</td>
-            <td>Date</td>
-            <td>Time</td>
+            <td>Datetime</td>
         </tr>
         </thead>
         <tbody>
@@ -58,12 +57,6 @@
         </select>
         <!--    TODO default to today, and minimum selection should be today-->
         <input class="form-control" type="date" name="dates" id="date-select">
-        <select class="form-control" name="timeslots" id="timeslot-select">
-            <option value="">Time Slots</option>
-            {% for time in times %}
-            <option value="{{time}}">{{time}}</option>
-            {% endfor %}
-        </select>
         <button class="btn btn-primary" type="submit" id="submit-appointment" value="submit">Submit</button>
     </div>
 
@@ -73,8 +66,7 @@
             <tr>
                 <td>Select</td>
                 <td>Location</td>
-                <td>Date</td>
-                <td>Time</td>
+                <td>Datetime</td>
             </tr>
             </thead>
             <tbody>

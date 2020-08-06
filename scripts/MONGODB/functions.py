@@ -156,7 +156,7 @@ def find_open_appts_locations(mdb):
                 "appt": "$appointments.appointment_id",
                 "location": "$appointments.location_id",
                 "datetime": "$appointments.datetime",
-                "location": "$appointments.name"
+                "name": "$appointments.name"
                 },
             "count": {"$sum":1}
              }

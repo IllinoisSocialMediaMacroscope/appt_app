@@ -1,6 +1,7 @@
 import os
+import datetime
 
-from flask import Flask, render_template, request, g, abort, redirect, url_for
+from flask import Flask, render_template, request, g, redirect, url_for
 from flask_login import (
      LoginManager,
      login_user,
@@ -16,7 +17,6 @@ from oic.utils.http_util import Redirect
 
 from db import get_db
 from user import User
-
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -126,79 +126,52 @@ def logout():
 
 @app.route('/', methods=['GET'])
 def homepage():
-     locations = ["Carle", "UIUC", "Peoria"]
-     times = [
-          "08:00 AM",
-          "08:30 AM",
-          "09:00 AM",
-          "09:30 AM",
-          "10:00 AM",
-          "10:30 AM",
-          "11:00 AM",
-          "11:30 AM",
-          "12:00 PM",
-          "12:30 PM",
-          "01:00 PM",
-          "01:30 PM",
-          "02:00 PM",
-          "02:30 PM",
-          "03:00 PM",
-          "03:30 PM",
-          "04:00 PM",
-          "04:30 PM",
-          "05:00 PM",
-          "05:30 PM",
-          "06:00 PM",
-     ]
+     db = get_db()
+
+     locations = []
+     for item in db.locations.find():
+          if item['name'] not in locations:
+               locations.append(item['name'])
 
      if current_user.is_authenticated:
           user = "Hello! " + current_user.fname + " " + current_user.lname
      else:
           user = None
 
-     return render_template('appointments.html', locations=locations, times=times, user=user)
+     return render_template('appointments.html', locations=locations, user=user)
 
 
-# @app.route('/list', methods=['GET'])
-# def list_available_appointments():
-#      query = '''SELECT a.id, a.date, a.time, l.name AS location
-#     FROM APPOINTMENTS a INNER JOIN LOCATIONS l
-#     ON a.location = l.id
-#     WHERE (DATE(a.date) >= DATE("now") and TIME(a.time) >= TIME("now","localtime") ) and a.id NOT IN (
-#     SELECT appointment
-#     FROM USER_APPOINTMENTS
-#     GROUP BY
-#         appointment
-#     HAVING COUNT(appointment) >= 120)'''
-#
-#      location = request.args.get('location')
-#      if location:
-#           query += ' AND l.name = "' + location + '"'
-#
-#      date = request.args.get('date')
-#      if date:
-#           query += ' AND a.date = "' + date + '"'
-#
-#      time = request.args.get('time')
-#      if time:
-#           query += ' AND a.time = "' + time + '"'
-#
-#      cur = get_db().cursor()
-#      cur.execute(query)
-#
-#      results = cur.fetchall()
-#      cur.close()
-#
-#      available_slots = [{
-#           "id": row['id'],
-#           "date": row['date'],
-#           "time": row['time'],
-#           "location": row['location']} for row in results
-#      ]
-#
-#      return {"available_slots": available_slots}
-#
-#
+@app.route('/list', methods=['GET'])
+def list_available_appointments():
+     location = request.args.get('location')
+     if location:
+          location_criteria = {"name": location}
+     else:
+          location_criteria = {}
+
+     date = request.args.get('date')
+
+     if date:
+          shift_criteria = {"datetime": {
+               "$gte": datetime.datetime.strptime(date, "%Y-%m-%d"),
+               "$lt": datetime.datetime.strptime(date, "%Y-%m-%d") + datetime.timedelta(days=1)
+          }}
+     else:
+          shift_criteria = {}
+
+     db = get_db()
+     available_slots = []
+     for l in db.locations.find(location_criteria):
+          for s in db.shifts.find(shift_criteria):
+               available_slots.append({
+                    "datetime_id": str(s["_id"]),
+                    "datetime": s["datetime"],
+                    "location_id": str(l["_id"]),
+                    "location": l['name']
+               })
+
+     return {"available_slots": available_slots}
+
 # @app.route('/my-appointment', methods=['GET'])
 # def list_my_appointment():
 #      if current_user.is_authenticated:
@@ -232,7 +205,6 @@ def homepage():
 #
 # @app.route('/submit', methods=['POST'])
 # def submit_appointment():
-#
 #      if current_user.is_authenticated:
 #
 #           if request.get_json() and request.get_json()['appt_id']:
@@ -346,7 +318,8 @@ def homepage():
 #                          return {"unclaimed_slot": unclaimed_slot}
 #
 #                if not matched:
-#                     abort(404,'The appointment id: ' + appt_id + ' does not exist in the current user\'s appointment list')
+#                     abort(404,
+#                           'The appointment id: ' + appt_id + ' does not exist in the current user\'s appointment list')
 #           else:
 #                cur.close()
 #                abort(403, 'Action not allowed. This user currently has no appointment!')
