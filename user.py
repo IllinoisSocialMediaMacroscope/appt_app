@@ -1,3 +1,4 @@
+from bson.objectid import ObjectId
 from flask_login import UserMixin
 
 from db import get_db
@@ -16,31 +17,25 @@ class User(UserMixin):
 
     @staticmethod
     def get(user_id):
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM USERS WHERE id = ?", (user_id,))
-        user_record = cur.fetchone()
+        db = get_db()
+        user_record = db.users.find_one({"_id": ObjectId(user_id)})
         if not user_record:
             return None
 
-        user = User(id_=user_record['id'], netid=user_record['netid'], fname=user_record['fname'],
+        user = User(id_=user_record['_id'], netid=user_record['netid'], fname=user_record['fname'],
                     lname=user_record['lname'], email=user_record['email'], uin=user_record['uin'],
                     phone=user_record['phone'])
-
+        print(user_record)
         return user
 
     @staticmethod
     def search(netid):
-        conn = get_db()
-        cur = conn.cursor()
-
-        # get the current user id
-        cur.execute("SELECT * FROM USERS WHERE netid = (?)", (netid,))
-        user_record = cur.fetchone()
+        db = get_db()
+        user_record = db.users.find_one({"netid": netid})
         if not user_record:
             return None
 
-        user = User(id_=user_record['id'], netid=user_record['netid'], fname=user_record['fname'],
+        user = User(id_=user_record['_id'], netid=user_record['netid'], fname=user_record['fname'],
                     lname=user_record['lname'], email=user_record['email'], uin=user_record['uin'],
                     phone=user_record['phone'])
 
@@ -48,13 +43,16 @@ class User(UserMixin):
 
     @staticmethod
     def create(netid, fname, lname, email, uin, phone):
-        conn = get_db()
-        cur = conn.cursor()
+        db = get_db()
+        result = db.users.insert_one({
+            "netid": netid,
+            "fname": fname,
+            "lname": lname,
+            "email": email,
+            "uin": uin,
+            "phone": phone
+        })
 
-        cur.execute("INSERT INTO USERS (netid, fname, lname, email, uin, phone) VALUES (?,?,?,?,?,?)", (netid, fname,
-                                                                                                        lname, email,
-                                                                                                        uin, phone,))
-        conn.commit()
-        user = User(id_=cur.lastrowid, netid=netid, fname=fname, lname=lname, email=email, uin=uin, phone=phone)
+        user = User(id_=result.inserted_id, netid=netid, fname=fname, lname=lname, email=email, uin=uin, phone=phone)
 
         return user

@@ -10,17 +10,17 @@ db = client["scheduler_db"]
 # if db.list_collection_names():
 #     db = drop_collections(db)
 
-## confirm collections exist
-if set(db.list_collection_names()) != set(['users', 'locations', 'shifts']):
-    #prep data
-    list_of_dicts = csv_to_dict()
-    #make collections via mass insert
-    db = make_collections(db, list_of_dicts)
-    #check collections' and db existence
-    confirm_creation(client, db)
-else:
-   #check collections' and db existence
-    confirm_creation(client, db)
+# ## confirm collections exist
+# if set(db.list_collection_names()) != set(['users', 'locations', 'shifts']):
+#     #prep data
+#     list_of_dicts = csv_to_dict()
+#     #make collections via mass insert
+#     db = make_collections(db, list_of_dicts)
+#     #check collections' and db existence
+#     confirm_creation(client, db)
+# else:
+#    #check collections' and db existence
+#     confirm_creation(client, db)
 
 ## make available_dates.csv
 show_current_dates(db)

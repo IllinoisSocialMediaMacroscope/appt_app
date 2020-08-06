@@ -1,9 +1,12 @@
-import sqlite3
-from flask import current_app, g
+from pymongo import MongoClient
+from flask import g
+
+client = MongoClient("localhost", 27017)
+db = client["scheduler_db"]
 
 def get_db():
-    conn = g._database = sqlite3.connect('appt_tracker.db')
-    conn.execute('''PRAGMA foreign_keys = 1''')
-    conn.row_factory = sqlite3.Row
 
-    return conn
+    client = g._database = MongoClient("localhost", 27017)
+    db = client["scheduler_db"]
+
+    return db
